@@ -47,20 +47,55 @@ public class MyThreadPool extends ThreadPoolExecutor {
 	{
 		return size;
 	}
+	private WorkerThread[] workers = null;
 	public WorkerThread[] execute(WorkerThread worker, int nTasks)
 	{
+// StackTraceElement[] _element = Thread.currentThread().getStackTrace();
+// System.err.println("<--");
+// for (int i = 0 ;i < _element.length; i++){
+// 	System.err.println(_element[i]);
+// }
+// System.err.println("-->");
+// System.err.println("entry");
+
+		try {
+			this.semaphore.acquire(nTasks);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 		MyThreadPool p = MyThreadPool.getInstance();
 		int[] partition = p.partition(nTasks);
-		WorkerThread[] workers = new WorkerThread[partition.length-1];
+		// WorkerThread[] workers = new WorkerThread[partition.length-1];
+		if (workers == null) {
+			workers = new WorkerThread[partition.length-1];
+		} else if (workers.length < partition.length - 1) {
+			WorkerThread[] tmp = new WorkerThread[partition.length-1];
+			System.arraycopy(workers, 0, tmp, 0, workers.length);
+			workers = tmp;
+		}
 		for(int i=0;i<partition.length-1;i++)
 		{
-			WorkerThread w = worker.clone();
+			// WorkerThread w = worker.clone();
+			WorkerThread w = workers[i];
+			if (w == null) {
+				w = worker.clone();
+				workers[i] = w;
+			}
 			w.set(partition[i], partition[i+1]-1);
+			// w.set(worker);
 			workers[i] = w;
-			p.execute(w);
+			p.execute0(w);
 		}
-		await();
+		await0(workers);
+		// await();
+// System.err.println("leave");
 		return workers;
+	}
+
+	public void await0(WorkerThread[] threads) {
+		for (int i = 0; i < threads.length; ++i) {
+			while (!threads[i].finished);
+		}
 	}
 	
 	public void await()
@@ -90,6 +125,16 @@ public class MyThreadPool extends ThreadPoolExecutor {
 		return partition;
 	}
 	
+	public void execute0(Runnable task) 
+	{
+		try {
+			super.execute(task);
+		}
+		catch(Exception ex)
+		{
+			throw RankLibError.create("Error in MyThreadPool.execute(): ", ex);
+		}
+	}
 	
 	public void execute(Runnable task) 
 	{

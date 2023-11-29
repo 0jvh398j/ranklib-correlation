@@ -315,6 +315,9 @@ public class FeatureHistogram {
 			for(int i=0;i<workers.length;i++)
 			{
 				Worker wk = (Worker)workers[i];
+				if (wk == null || wk.cfg == null) {
+					break;
+				}
 				if(best.S < wk.cfg.S)
 					best = wk.cfg;
 			}		
@@ -435,6 +438,40 @@ public class FeatureHistogram {
 			this.sampleSortedIdx = sampleSortedIdx;
 			this.thresholds = thresholds;			
 		}
+
+		public void set(Object _w) {
+			Worker w = (Worker)_w;
+			// if (w.type == 0) {
+			this.type = w.type;
+			this.fh = w.fh;
+			this.usedFeatures = w.usedFeatures;
+			this.minLeafSup = w.minLeafSup;
+
+			// } else if (w.type == 1){
+			// type = 1;
+			this.fh = w.fh;
+			this.labels = w.labels;
+			// } else if (w.type == 2) {
+			// type = 2;
+			this.fh = w.fh;
+			this.parent = w.parent;
+			this.soi = w.soi;
+			this.labels = w.labels;
+			// } else if (w.type == 3) {
+			// type = 3;
+			this.fh = w.fh;
+			this.parent = w.parent;
+			this.leftSibling = w.leftSibling;
+			// } else if(w.type ==4) {
+			// type = 4;
+			this.fh = w.fh;
+			this.samples = w.samples;
+			this.labels = w.labels;
+			this.sampleSortedIdx = w.sampleSortedIdx;
+			this.thresholds = w.thresholds;			
+			this.finished = false;
+			// }
+		}
 		public void run()
 		{
 			if(type == 0)
@@ -447,6 +484,7 @@ public class FeatureHistogram {
 				fh.construct(parent, leftSibling, start, end);
 			else if(type == 4)
 				fh.construct(samples, labels, sampleSortedIdx, thresholds, start, end);
+			this.finished = true;
 		}		
 		public WorkerThread clone()
 		{

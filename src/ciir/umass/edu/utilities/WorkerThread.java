@@ -9,4 +9,6 @@ public abstract class WorkerThread implements Runnable {
 		this.end = end;
 	}
 	public abstract WorkerThread clone();
+	public volatile boolean finished = false;
+	public abstract void set(Object o);
 }
